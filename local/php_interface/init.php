@@ -169,6 +169,20 @@ class MyEventsHandler
             $APPLICATION->ThrowException($arFields['RESULT_MESSAGE']);
             return false;
         }*/
+        $curdate = strtotime(date("Y-m-d"));
+        if(strtotime($arFields['UF_CRM_1634060222']) == $curdate) {
+            if(!$arFields['UF_CRM_1628278307']) {
+                if(!$obResDeal['UF_CRM_1628278307']) {
+                    $errorfield[] = 'Одобрение использования внутренних средств';
+                }
+            }
+        } elseif(!$arFields['UF_CRM_1634060222'] && strtotime($obResDeal['UF_CRM_1634060222']) == $curdate) {
+            if(!$arFields['UF_CRM_1628278307']) {
+                if(!$obResDeal['UF_CRM_1628278307']) {
+                    $errorfield[] = 'Одобрение использования внутренних средств';
+                }
+            }
+        }
 
         // проверка выполнение условия требуется кредитования
         if($arFields['STAGE_ID'] && in_array($arFields['STAGE_ID'], $stagesneedcredit)) {
@@ -273,48 +287,32 @@ class MyEventsHandler
                 //return false;
             }
         }
-
-
-//новый код
-
-
+        //новый код
         $dealStagesZakupka = [ 'FINAL_INVOICE', '1', '2', '3', '5', 'WON'];
-//   $arFields['STAGE_ID'] == 'FINAL_INVOICE'
-
+        //   $arFields['STAGE_ID'] == 'FINAL_INVOICE'
         if(in_array($arFields['STAGE_ID'], $dealStagesZakupka) && (!$arFields['UF_CRM_1586519629492'] && !$arFields['UF_CRM_1628158610'] ) ) {
-
             if(!$obResDeal['UF_CRM_1586519629492'] && !$obResDeal['UF_CRM_1628158610']) {
-
                 $errorfield[] = "Решение по закупочной процедуре (документ) или Решение по закупочной процедуре (ссылка)";
                 /*$arFields['RESULT_MESSAGE'] = "Заполните поля - Решение по закупочной процедуре (документ) или Решение по закупочной процедуре (ссылка)";
-
                 $arMessage = [
-
                     //      "FROM_USER_ID"  => 1,
                     //      "TO_USER_ID"    => $arFields['ASSIGNED_BY_ID'],
                     //      "NOTIFY_TYPE"   => IM_NOTIFY_FROM,
                     //      "NOTIFY_MODULE" => "crm",
                     //      "NOTIFY_MESSAGE" => $arFields['RESULT_MESSAGE']
-
                     "MESSAGE_TYPE" => "S", # P - private chat, G - group chat, S - notification
                     "TO_USER_ID" => $arFields['MODIFY_BY_ID'],
                     "FROM_USER_ID" => 1,
                     "MESSAGE" => "СДЕЛКА НЕ СОХРАНЕНА!" . $arFields['RESULT_MESSAGE'],
                     "AUTHOR_ID" => 1
-
                 ];
-
                 CModule::IncludeModule("im");
                 CIMMessenger::Add($arMessage);
-//            CIMNotify::Add($arMessage);
-
+                // CIMNotify::Add($arMessage);
                 //   file_put_contents($_SERVER['DOCUMENT_ROOT']."/local/logs/executing.txt",print_r($arFields,1).date("d/m/Y H:i:s"),FILE_APPEND);
-
                 $APPLICATION->ThrowException($arFields['RESULT_MESSAGE']);
                 return false;*/
-
             }
-
         }
 
         if($arFields['UF_CRM_1628160237'] == 3560 && !$arFields['UF_CRM_1628160331']) {
@@ -328,9 +326,7 @@ class MyEventsHandler
 
         }
 
-
-//новый код 14.09.21
-
+        //новый код 14.09.21
         if($arFields['UF_CRM_1588154188727'] == 281 && !$arFields['UF_CRM_1631627071']) {
             if(!$obResDeal['UF_CRM_1631627071'] && in_array($obResDeal['STAGE_ID'], $stagespnr)) {
                 $errorfield[] = "Обеспечение контракта";
@@ -352,14 +348,12 @@ class MyEventsHandler
                     "MESSAGE" => "СДЕЛКА НЕ СОХРАНЕНА!" . $arFields['RESULT_MESSAGE'],
                     "AUTHOR_ID" => 1
                 ];
-
                 CModule::IncludeModule("im");
                 CIMMessenger::Add($arMessage);
                 //  file_put_contents($_SERVER['DOCUMENT_ROOT']."/local/logs/tip_zakupki.txt",print_r([$arFields,$obResDeal], 1).date("d/m/Y H:i:s"),FILE_APPEND);
                 $APPLICATION->ThrowException($arFields['RESULT_MESSAGE']);
                 return false;*/
             }
-
         }
 
         if($arFields['UF_CRM_1631627071'] == 3589 && !$arFields['UF_CRM_1631628744']) {
@@ -383,7 +377,6 @@ class MyEventsHandler
                     "MESSAGE" => "СДЕЛКА НЕ СОХРАНЕНА!" . $arFields['RESULT_MESSAGE'],
                     "AUTHOR_ID" => 1
                 ];
-
                 CModule::IncludeModule("im");
                 CIMMessenger::Add($arMessage);
                 // file_put_contents($_SERVER['DOCUMENT_ROOT']."/local/logs/obesp_kontr.txt",print_r([111,$arFields,$obResDeal], 1).date("d/m/Y H:i:s"),FILE_APPEND);
