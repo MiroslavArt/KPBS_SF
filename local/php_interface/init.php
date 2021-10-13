@@ -128,7 +128,7 @@ class MyEventsHandler
         $modifiedById = $arFields["MODIFY_BY_ID"];
         $stagesarchitect = array('FINAL_INVOICE', '1', '2', '3', 'WON');
         $stagespnr = array('1', '2', '3', 'WON');
-        $stagesneedcredit = ['EXECUTING', 'Contract conclusion', '1', '2'];
+        $stagesneedcredit = ['EXECUTING', 'FINAL_INVOICE', '1', '2'];
 
         // Проверка наличия компании в сделке
         $companyId = $arFields["COMPANY_ID"];
@@ -169,23 +169,47 @@ class MyEventsHandler
             $APPLICATION->ThrowException($arFields['RESULT_MESSAGE']);
             return false;
         }*/
-        $curdate = strtotime(date("Y-m-d"));
-        if(strtotime($arFields['UF_CRM_1634060222']) == $curdate) {
-            if(!$arFields['UF_CRM_1628278307']) {
-                if(!$obResDeal['UF_CRM_1628278307']) {
-                    $errorfield[] = 'Одобрение использования внутренних средств';
+
+
+        if($arFields['UF_CRM_1628159471']=='3557' || $obResDeal['UF_CRM_1628159471']=='3557') {
+            $curdate = strtotime(date("Y-m-d"));
+            if (strtotime($arFields['UF_CRM_1634060222']) == $curdate) {
+                if (!$arFields['UF_CRM_1628278307']) {
+                    if (!$obResDeal['UF_CRM_1628278307']) {
+                        $errorfield[] = 'Одобрение использования внутренних средств';
+                    }
                 }
-            }
-        } elseif(!$arFields['UF_CRM_1634060222'] && strtotime($obResDeal['UF_CRM_1634060222']) == $curdate) {
-            if(!$arFields['UF_CRM_1628278307']) {
-                if(!$obResDeal['UF_CRM_1628278307']) {
-                    $errorfield[] = 'Одобрение использования внутренних средств';
+            } elseif (!$arFields['UF_CRM_1634060222'] && strtotime($obResDeal['UF_CRM_1634060222']) == $curdate) {
+                if (!$arFields['UF_CRM_1628278307']) {
+                    if (!$obResDeal['UF_CRM_1628278307']) {
+                        $errorfield[] = 'Одобрение использования внутренних средств';
+                    }
                 }
             }
         }
 
         // проверка выполнение условия требуется кредитования
-        if($arFields['STAGE_ID'] && in_array($arFields['STAGE_ID'], $stagesneedcredit)) {
+        if(in_array($arFields['STAGE_ID'], $stagesneedcredit) || in_array($obResDeal['STAGE_ID'], $stagesneedcredit)) {
+            if($arFields['UF_CRM_1628278307']=='3564' || $obResDeal['UF_CRM_1628278307']=='3564') {
+                if(!$arFields['UF_CRM_1628279779']) {
+                    if(!$obResDeal['UF_CRM_1628279779']) {
+                        $errorfield[] = 'Источник внутренних средств';
+                    }
+                }
+                if(!$arFields['UF_CRM_1628279966']) {
+                    if(!$obResDeal['UF_CRM_1628279966']) {
+                        $errorfield[] = 'Внутренняя ставка кредита %годовых';
+                    }
+                }
+                if($arFields['UF_CRM_1628279779']=='3567' || $obResDeal['UF_CRM_1628279779']=='3567') {
+                    if(!$arFields['UF_CRM_1628280039']) {
+                        if(!$obResDeal['UF_CRM_1628280039']) {
+                            $errorfield[] = 'Наименование источника';
+                        }
+                    }
+                }
+            }
+
             if($arFields['UF_CRM_1628159471']=='3557' || $obResDeal['UF_CRM_1628159471']=='3557') {
                 if(!$arFields['UF_CRM_1628244390']) {
                     if(!$obResDeal['UF_CRM_1628244390']) {
