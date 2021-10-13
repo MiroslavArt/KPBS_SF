@@ -126,26 +126,28 @@ class MyEventsHandler
         //\Bitrix\Main\Diag\Debug::writeToFile($arFields, "dept2", "__miros.log");
         $dealId = $arFields["ID"];
         $modifiedById = $arFields["MODIFY_BY_ID"];
-
         $stagesarchitect = array('FINAL_INVOICE', '1', '2', '3', 'WON');
         $stagespnr = array('1', '2', '3', 'WON');
+        $stagesneedcredit = ['EXECUTING', 'Contract conclusion', '1', '2'];
 
         // Проверка наличия компании в сделке
         $companyId = $arFields["COMPANY_ID"];
         $deal = CAllCrmDeal::GetByID($dealId);
+        $errorfield = [];
         if(!isset($companyId)){
             if(!isset($deal) || !isset($deal["COMPANY_ID"]) || $deal["COMPANY_ID"] == 0){
-                $arFields['RESULT_MESSAGE'] = "Не заполнено поле 'Компания'";
-                $APPLICATION->ThrowException($arFields['RESULT_MESSAGE']);
-                return false;
+                $errorfield[] = 'Компания';
+                //$arFields['RESULT_MESSAGE'] = "Не заполнено поле 'Компания'";
+                //$APPLICATION->ThrowException($arFields['RESULT_MESSAGE']);
+                //return false;
             }
         }
         CModule::IncludeModule('crm');
         $arFilterDeal = array('ID'=>$dealId);
         // тут меняем код 'UF_CRM_1614162501453' на код проверки архитектора на бое
-        $arSelectDeal = array('ID', 'STAGE_ID', 'UF_CRM_1628160237', 'UF_CRM_1611675525741', 'UF_CRM_1611675557650', 'UF_CRM_1599830407833', 'UF_CRM_1614278967',
-            'UF_CRM_1617457299824', 'UF_CRM_1589453961052', 'UF_CRM_1589454013038', 'UF_CRM_1586519629492', 'UF_CRM_1628158610', 'UF_CRM_1628160331', 'UF_CRM_1631627071', 'UF_CRM_1631628744', 'UF_CRM_1588154188727');
-
+        //$arSelectDeal = array('ID', 'STAGE_ID', 'UF_CRM_1628160237', 'UF_CRM_1611675525741', 'UF_CRM_1611675557650', 'UF_CRM_1599830407833', 'UF_CRM_1614278967',
+        //    'UF_CRM_1617457299824', 'UF_CRM_1628159471', 'UF_CRM_1589453961052', 'UF_CRM_1589454013038', 'UF_CRM_1586519629492', 'UF_CRM_1628158610', 'UF_CRM_1628160331', 'UF_CRM_1631627071', 'UF_CRM_1631628744', 'UF_CRM_1588154188727');
+        $arSelectDeal = array('ID', 'STAGE_ID', 'UF_*');
         $obResDeal = CCrmDeal::GetListEx(false,$arFilterDeal,false,false,$arSelectDeal)->Fetch();
         // проверка архитектора
         /*if ($arFields['UF_CRM_1614278967']=='2089' && !$arFields['UF_CRM_1614862006']) {
@@ -168,6 +170,45 @@ class MyEventsHandler
             return false;
         }*/
 
+        // проверка выполнение условия требуется кредитования
+        if($arFields['STAGE_ID'] && in_array($arFields['STAGE_ID'], $stagesneedcredit)) {
+            if($arFields['UF_CRM_1628159471']=='3557' || $obResDeal['UF_CRM_1628159471']=='3557') {
+                if(!$arFields['UF_CRM_1628244390']) {
+                    if(!$obResDeal['UF_CRM_1628244390']) {
+                        $errorfield[] = 'Предполагаемый кредитор';
+                    }
+                }
+                if($arFields['UF_CRM_1628244390']=='3561' || $obResDeal['UF_CRM_1628244390']=='3561') {
+                    if(!$arFields['UF_CRM_1628244920']) {
+                        if(!$obResDeal['UF_CRM_1628244920']) {
+                            $errorfield[] = 'Наименование кредитора';
+                        }
+                    }
+                }
+                if(!$arFields['UF_CRM_1628244825']) {
+                    if(!$obResDeal['UF_CRM_1628244825']) {
+                        $errorfield[] = 'Предварительная сумма кредита';
+                    }
+                }
+                if(!$arFields['UF_CRM_1628245342']) {
+                    if(!$obResDeal['UF_CRM_1628245342']) {
+                        $errorfield[] = 'Предварительный срок кредита';
+                    }
+                }
+                if(!$arFields['UF_CRM_1628245424']) {
+                    if(!$obResDeal['UF_CRM_1628245424']) {
+                        $errorfield[] = 'Предварительная ставка кредита';
+                    }
+                }
+                if(!$arFields['UF_CRM_1628245491']) {
+                    if(!$obResDeal['UF_CRM_1628245491']) {
+                        $errorfield[] = 'Предварительная дата перевода средств';
+                    }
+                }
+            }
+        }
+
+        // проверка выполнения условия ПНР
         if(in_array(523, $arFields['UF_CRM_1599830407833']) || in_array(523, $obResDeal['UF_CRM_1599830407833']) ||
             in_array(525, $arFields['UF_CRM_1599830407833']) || in_array(525, $obResDeal['UF_CRM_1599830407833'])) {
             //\Bitrix\Main\Diag\Debug::writeToFile('firstcond', "dept2", "__miros.log");
@@ -183,7 +224,7 @@ class MyEventsHandler
                 //\Bitrix\Main\Diag\Debug::writeToFile($obResDeal['UF_CRM_1614278967'], "dept2", "__miros.log");
                 //\Bitrix\Main\Diag\Debug::writeToFile($arFields['UF_CRM_1614278967'], "dept2", "__miros.log");
                 // тут меняем код ПП и его значения = нет в соответствие с продом
-                $errorfield = [];
+                //$errorfield = [];
                 /*if (!$arFields['UF_CRM_1614278967']) {
                     if(!$obResDeal['UF_CRM_1614278967']) {
                         $errorfield[] = "&quot;Проверка архитектора&quot;";
@@ -199,56 +240,37 @@ class MyEventsHandler
                         $errorfield[] = "&quot;ПНР&quot;";
                     }
                 }
-                if($errorfield) {
-                    if(count($errorfield)==1) {
-                        $errormsg = "Чтобы сделка сохранила изменения поле ".current($errorfield)." должно быть заполнено!";
-                    } else {
-                        $errormsg = "Чтобы сделка сохранила изменения поля ".implode(",", $errorfield)." должны быть заполнены!";
-                    }
-                    $arFields['RESULT_MESSAGE'] = $errormsg;
-                    CModule::IncludeModule('im');
-                    $arFieldschat = array(
-                        "MESSAGE_TYPE" => "S", # P - private chat, G - group chat, S - notification
-                        "TO_USER_ID" => $arFields['MODIFY_BY_ID'],
-                        "FROM_USER_ID" => 1,
-                        "MESSAGE" => $arFields['RESULT_MESSAGE'],
-                        "AUTHOR_ID" => 1
-                        //"EMAIL_TEMPLATE" => "some",
-                        //"NOTIFY_TYPE" => 2,  # 1 - confirm, 2 - notify single from, 4 - notify single
-                        //"NOTIFY_MODULE" => "main", # module id sender (ex: xmpp, main, etc)
-                        //"NOTIFY_EVENT" => "IM_GROUP_INVITE", # module event id for search (ex, IM_GROUP_INVITE)
-                        //"NOTIFY_TITLE" => "title to send email", # notify title to send email
-                    );
-                    CIMMessenger::Add($arFieldschat);
-                    $APPLICATION->ThrowException($arFields['RESULT_MESSAGE']);
-                    return false;
-                }
+
             }
         }
+
 
         // заменить код UF_CRM_1612080094 на код поля пнр на бое, UF_CRM_1612080473 на код поля дата ПНР на бое
         // заменить значение 2039 на значение поля да поля ПНР на бое
         // пнр заполнена, дата нет (восклиц знак если нет)
         if($arFields['UF_CRM_1611675525741']==2041 && !$arFields['UF_CRM_1611675557650']) {
             if(!$obResDeal['UF_CRM_1611675557650']) {
-                $arFields['RESULT_MESSAGE'] = "Поле дата ПНР должно быть заполнено";
-                $APPLICATION->ThrowException($arFields['RESULT_MESSAGE']);
-                return false;
+                $errorfield[] = "дата ПНР";
+                //$arFields['RESULT_MESSAGE'] = "Поле дата ПНР должно быть заполнено";
+                //$APPLICATION->ThrowException($arFields['RESULT_MESSAGE']);
+                //return false;
             }
             // дата пнр заполнена, пнр нет
         } else if($arFields['UF_CRM_1611675525741'] != 2041 && $arFields['UF_CRM_1611675557650']) {
             if($obResDeal['UF_CRM_1611675525741'] != 2041) {
-                $arFields['RESULT_MESSAGE'] = "Поле ПНР должно иметь значение да";
-                $APPLICATION->ThrowException($arFields['RESULT_MESSAGE']);
-                return false;
+                $errorfield[] = "ПНР должно иметь значение да";
+                //$arFields['RESULT_MESSAGE'] = "Поле ПНР должно иметь значение да";
+                //$APPLICATION->ThrowException($arFields['RESULT_MESSAGE']);
+                //return false;
             }
         }
 
         if (array_key_exists('UF_CRM_1611675557650', $arFields) && $arFields['UF_CRM_1611675557650']=="") {
             if($arFields['UF_CRM_1611675525741']==2041 && $obResDeal['UF_CRM_1611675525741']==2041) {
-                $arFields['RESULT_MESSAGE'] = "Дата ПНР не может быть пустой";
-                $APPLICATION->ThrowException($arFields['RESULT_MESSAGE']);
-                return false;
+                $errorfield[] = "дата ПНР";
+                //$arFields['RESULT_MESSAGE'] = "Дата ПНР не может быть пустой";
+                //$APPLICATION->ThrowException($arFields['RESULT_MESSAGE']);
+                //return false;
             }
         }
 
@@ -263,8 +285,8 @@ class MyEventsHandler
 
             if(!$obResDeal['UF_CRM_1586519629492'] && !$obResDeal['UF_CRM_1628158610']) {
 
-
-                $arFields['RESULT_MESSAGE'] = "Заполните поля - Решение по закупочной процедуре (документ) или Решение по закупочной процедуре (ссылка)";
+                $errorfield[] = "Решение по закупочной процедуре (документ) или Решение по закупочной процедуре (ссылка)";
+                /*$arFields['RESULT_MESSAGE'] = "Заполните поля - Решение по закупочной процедуре (документ) или Решение по закупочной процедуре (ссылка)";
 
                 $arMessage = [
 
@@ -289,23 +311,19 @@ class MyEventsHandler
                 //   file_put_contents($_SERVER['DOCUMENT_ROOT']."/local/logs/executing.txt",print_r($arFields,1).date("d/m/Y H:i:s"),FILE_APPEND);
 
                 $APPLICATION->ThrowException($arFields['RESULT_MESSAGE']);
-                return false;
+                return false;*/
 
             }
 
         }
 
         if($arFields['UF_CRM_1628160237'] == 3560 && !$arFields['UF_CRM_1628160331']) {
-
             if(!$obResDeal['UF_CRM_1628160331']) {
-
-                $arFields['RESULT_MESSAGE'] = "Заполните поля - Дата истечения договора";
-
+                $errorfield[] = "Дата истечения договора";
+                //$arFields['RESULT_MESSAGE'] = "Заполните поля - Дата истечения договора";
                 //   file_put_contents($_SERVER['DOCUMENT_ROOT']."/local/logs/deal_type.txt",print_r([$arFields,$obResDeal], 1).date("d/m/Y H:i:s"),FILE_APPEND);
-
-                $APPLICATION->ThrowException($arFields['RESULT_MESSAGE']);
-                return false;
-
+                //$APPLICATION->ThrowException($arFields['RESULT_MESSAGE']);
+                //return false;
             }
 
         }
@@ -314,89 +332,89 @@ class MyEventsHandler
 //новый код 14.09.21
 
         if($arFields['UF_CRM_1588154188727'] == 281 && !$arFields['UF_CRM_1631627071']) {
-
             if(!$obResDeal['UF_CRM_1631627071'] && in_array($obResDeal['STAGE_ID'], $stagespnr)) {
-
-                $arFields['RESULT_MESSAGE'] = "Заполните поле - Обеспечение контракта";
-
+                $errorfield[] = "Обеспечение контракта";
+                //$arFields['RESULT_MESSAGE'] = "Заполните поле - Обеспечение контракта";
                 // file_put_contents($_SERVER['DOCUMENT_ROOT']."/local/logs/tip_zakupki.txt",print_r([$arFields,$obResDeal], 1).date("d/m/Y H:i:s"),FILE_APPEND);
-
-                $APPLICATION->ThrowException($arFields['RESULT_MESSAGE']);
-                return false;
-
+                //$APPLICATION->ThrowException($arFields['RESULT_MESSAGE']);
+                //return false;
             }
-
         }
 
         if(in_array($arFields['STAGE_ID'], $stagespnr)) {
-
             if(!$obResDeal['UF_CRM_1631627071'] && $obResDeal['UF_CRM_1588154188727'] == 281 && !$arFields['UF_CRM_1631627071']) {
-
-                $arFields['RESULT_MESSAGE'] = "Заполните поле - Обеспечение контракта";
-
+                $errorfield[] = "Обеспечение контракта";
+                /*$arFields['RESULT_MESSAGE'] = "Заполните поле - Обеспечение контракта";
                 $arMessage = [
-
                     "MESSAGE_TYPE" => "S", # P - private chat, G - group chat, S - notification
                     "TO_USER_ID" => $arFields['MODIFY_BY_ID'],
                     "FROM_USER_ID" => 1,
                     "MESSAGE" => "СДЕЛКА НЕ СОХРАНЕНА!" . $arFields['RESULT_MESSAGE'],
                     "AUTHOR_ID" => 1
-
                 ];
 
                 CModule::IncludeModule("im");
                 CIMMessenger::Add($arMessage);
-
                 //  file_put_contents($_SERVER['DOCUMENT_ROOT']."/local/logs/tip_zakupki.txt",print_r([$arFields,$obResDeal], 1).date("d/m/Y H:i:s"),FILE_APPEND);
-
                 $APPLICATION->ThrowException($arFields['RESULT_MESSAGE']);
-                return false;
-
+                return false;*/
             }
 
         }
 
         if($arFields['UF_CRM_1631627071'] == 3589 && !$arFields['UF_CRM_1631628744']) {
-
             if(!$obResDeal['UF_CRM_1631628744'] && $obResDeal['STAGE_ID'] == 'WON') {
-
-                $arFields['RESULT_MESSAGE'] = "Заполните поле - Возврат обеспечения";
-
+                $errorfield[] = "Возврат обеспечения";
+                //$arFields['RESULT_MESSAGE'] = "Заполните поле - Возврат обеспечения";
                 //  file_put_contents($_SERVER['DOCUMENT_ROOT']."/local/logs/obesp_kontr.txt",print_r([111,$arFields,$obResDeal], 1).date("d/m/Y H:i:s"),FILE_APPEND);
-
-                $APPLICATION->ThrowException($arFields['RESULT_MESSAGE']);
-                return false;
-
+                //$APPLICATION->ThrowException($arFields['RESULT_MESSAGE']);
+                //return false;
             }
-
         }
 
         if($arFields['STAGE_ID'] == 'WON') {
-
             if(!$obResDeal['UF_CRM_1631628744'] && $obResDeal['UF_CRM_1631627071'] == 3589) {
-
-                $arFields['RESULT_MESSAGE'] = "Заполните поле - Возврат обеспечения";
-
+                $errorfield[] = "Возврат обеспечения";
+                /*$arFields['RESULT_MESSAGE'] = "Заполните поле - Возврат обеспечения";
                 $arMessage = [
-
                     "MESSAGE_TYPE" => "S", # P - private chat, G - group chat, S - notification
                     "TO_USER_ID" => $arFields['MODIFY_BY_ID'],
                     "FROM_USER_ID" => 1,
                     "MESSAGE" => "СДЕЛКА НЕ СОХРАНЕНА!" . $arFields['RESULT_MESSAGE'],
                     "AUTHOR_ID" => 1
-
                 ];
 
                 CModule::IncludeModule("im");
                 CIMMessenger::Add($arMessage);
-
                 // file_put_contents($_SERVER['DOCUMENT_ROOT']."/local/logs/obesp_kontr.txt",print_r([111,$arFields,$obResDeal], 1).date("d/m/Y H:i:s"),FILE_APPEND);
-
                 $APPLICATION->ThrowException($arFields['RESULT_MESSAGE']);
-                return false;
-
+                return false;*/
             }
-
+        }
+        $errorfield = array_unique($errorfield);
+        if($errorfield) {
+            if(count($errorfield)==1) {
+                $errormsg = "Чтобы сделка сохранила изменения поле ".current($errorfield)." должно быть заполнено!";
+            } else {
+                $errormsg = "Чтобы сделка сохранила изменения поля ".implode(",", $errorfield)." должны быть заполнены!";
+            }
+            $arFields['RESULT_MESSAGE'] = $errormsg;
+            CModule::IncludeModule('im');
+            $arFieldschat = array(
+                "MESSAGE_TYPE" => "S", # P - private chat, G - group chat, S - notification
+                "TO_USER_ID" => $arFields['MODIFY_BY_ID'],
+                "FROM_USER_ID" => 1,
+                "MESSAGE" => $arFields['RESULT_MESSAGE'],
+                "AUTHOR_ID" => 1
+                //"EMAIL_TEMPLATE" => "some",
+                //"NOTIFY_TYPE" => 2,  # 1 - confirm, 2 - notify single from, 4 - notify single
+                //"NOTIFY_MODULE" => "main", # module id sender (ex: xmpp, main, etc)
+                //"NOTIFY_EVENT" => "IM_GROUP_INVITE", # module event id for search (ex, IM_GROUP_INVITE)
+                //"NOTIFY_TITLE" => "title to send email", # notify title to send email
+            );
+            CIMMessenger::Add($arFieldschat);
+            $APPLICATION->ThrowException($arFields['RESULT_MESSAGE']);
+            return false;
         }
 
         global $USER_FIELD_MANAGER;
